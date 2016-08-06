@@ -22,6 +22,6 @@ git clone https://github.com/vijayinaws/Ansible-Drupal
 
 ```
 cd /tmp/ansible-drupal
-./install.sh
+ansible-playbook -v --connection local -i localhost, --sudo --user ec2-user  drupal.playbook
 ```
 

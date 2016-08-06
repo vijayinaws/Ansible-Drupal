@@ -1,0 +1,54 @@
+
+- name: Stop sendmail server
+  service: name=sendmail state=stopped enabled=no
+
+- name: Install apache server
+  yum: name={{ item }} state=present
+  with_items:
+    - httpd
+
+- name: Install php
+  yum: name={{ item }} state=present
+  with_items:
+    - php
+    - php-mysql
+    - php-gd
+    - php-xml
+    - php-mbstring
+
+- name: Download drupal files
+  get_url: url={{ item }} dest=/tmp
+  with_items:
+    - "http://ftp.drupal.org/files/projects/drupal-{{ drupal_version }}.tar.gz"
+    - "http://ftp.drupal.org/files/projects/drush-{{ drush_version }}.tar.gz"
+
+- name: Unarchive drupal
+  unarchive: src=/tmp/drupal-{{ drupal_version }}.tar.gz dest=/tmp
+
+- name: Unarchive drush
+  unarchive: src=/tmp/drush-{{ drush_version }}.tar.gz dest=/tmp
+
+- name: Copy drupal to /var/www/html
+  synchronize: src=/tmp/drupal-{{ drupal_version }}/ dest=/var/www/html/
+
+- name: Create setup sql file (for create database drupaldb)
+  copy: content="CREATE DATABASE IF NOT EXISTS {{ drupal_db_name }};" dest=/tmp/setup.mysql mode=0644
+
+- name: Run setup sql file.
+  shell: mysql -h {{ mysql_host }} -u root --password={{ mysql_root_password }} < /tmp/setup.mysql
+
+- name: Change all 'AllowOverride None' to 'AllowOverride All' /etc/httpd/conf/httpd.conf
+  #lineinfile: dest=/etc/httpd/conf/httpd.conf regexp='AllowOverride None' line='AllowOverride All' state=present
+  command: sed -i 's/AllowOverride None/AllowOverride All/g' /etc/httpd/conf/httpd.conf
+
+- name: Start httpd server
+  service: name=httpd state=started enabled=yes
+
+- name: Run drush init script.
+  shell: /tmp/drush/drush site-install standard --yes --site-name='{{ drupal_site_name }}' --account-name={{ drupal_admin_username }} --account-pass={{ drupal_admin_password }} --db-url=mysql://root:{{ mysql_root_password }}@{{ mysql_host }}/{{ drupal_db_name }} --db-prefix={{ drupal_table_prefix }}
+  args:
+    chdir: /var/www/html
+
+- name: Chown /var/www/html/sites/default/files
+  file: path=/var/www/html/sites/default/files owner=apache group=apache
+

@@ -1,0 +1,15 @@
+
+- name: Install mysql server
+  yum: name={{ item }} state=present
+  with_items:
+    - mysql
+    - mysql-server
+    - mysql-devel
+    - mysql-libs
+
+- name: Start mysql server
+  service: name=mysqld state=started enabled=yes
+
+- name: Set mysql root user password.
+  command: mysqladmin -u root password {{ mysql_root_password }}
+  ignore_errors: yes

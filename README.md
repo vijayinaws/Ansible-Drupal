@@ -15,7 +15,7 @@ sudo pip install ansible # To fix folder/file permissions
 
 ```
 cd /tmp
-git clone https://github.com/naa-aasat/ansible-drupal
+git clone https://github.com/vijayinaws/ansible-drupal
 ```
 
 ## Install
